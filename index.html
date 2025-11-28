@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>It's Knot Fun - Three Dog Leash Detangle Simulation</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="tabs">
+            <div class="tab active" data-tab="simulation">Simulation</div>
+            <div class="tab" data-tab="theory">Theory & Mathematics</div>
+        </div>
+
+        <div id="simulationTab" class="tab-content active">
+            <h1>It's Knot Fun</h1>
+            <p class="subtitle">Three Dog Leash Detangle — An exploration of braid theory, path planning, and topological complexity</p>
+
+            <div class="canvas-container">
+                <canvas id="simulationCanvas"></canvas>
+            </div>
+
+            <div class="controls">
+                <div class="control-group">
+                    <label>Walker Speed</label>
+                    <input type="range" id="walkerSpeedSlider" min="0" max="3" value="1" step="0.25">
+                    <span class="value-display" id="walkerSpeedValue">1.0x</span>
+                </div>
+                <div class="control-group">
+                    <label>Dog Energy</label>
+                    <input type="range" id="dogEnergySlider" min="0.5" max="3" value="1.5" step="0.25">
+                    <span class="value-display" id="dogEnergyValue">1.5x</span>
+                </div>
+                <div class="control-group">
+                    <label>Leash Length</label>
+                    <input type="range" id="leashSlider" min="60" max="180" value="120" step="10">
+                    <span class="value-display" id="leashValue">120px</span>
+                </div>
+                <div class="control-group buttons">
+                    <button id="resetBtn">Reset Simulation</button>
+                    <button id="pauseBtn">Pause</button>
+                </div>
+            </div>
+
+            <div class="stats">
+                <div class="stat">
+                    <span class="stat-value" id="crossingCount">0</span>
+                    <span class="stat-label">Total Crossings</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="tangleMetric">0</span>
+                    <span class="stat-label">Tangle Complexity</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="timeElapsed">0s</span>
+                    <span class="stat-label">Time Elapsed</span>
+                </div>
+                <div class="stat braid-stat">
+                    <span class="stat-value" id="braidWord">ε</span>
+                    <span class="stat-label">Braid Word</span>
+                </div>
+            </div>
+
+            <div class="event-log" id="eventLog">
+                <div class="event">[0.0s] Simulation started — walk begins!</div>
+            </div>
+        </div>
+
+        <div id="theoryTab" class="tab-content">
+            <div class="theory-section">
+                <h1>The Mathematics of Dog Leash Tangles</h1>
+
+                <h2>Introduction: A Topological Problem</h2>
+                <p>The three-dog leash problem sits at the intersection of <strong>braid theory</strong>, <strong>topology</strong>, and <strong>computational complexity</strong>. What appears as a simple daily frustration—untangling dog leashes—reveals profound mathematical structures that have occupied mathematicians since the early 20th century.</p>
+
+                <h2>Why Three Dogs Changes Everything</h2>
+
+                <h3>The Two-Dog Case (Trivial)</h3>
+                <p>With two dogs, the problem is degenerate. Any configuration can be resolved by having one dog walk around the other in the appropriate direction. The <strong>braid group B₂</strong> is infinite cyclic (isomorphic to ℤ), meaning every tangle can be represented as a power of a single generator σ₁ (dog A crossing over dog B).</p>
+
+                <div class="formula">
+                B₂ = ⟨σ₁ | ⟩ ≅ ℤ<br>
+                Solution: Apply σ₁⁻ⁿ to undo n crossings
+                </div>
+
+                <h3>The Three-Dog Case (Non-Trivial)</h3>
+                <p>With three dogs, we enter the realm of <strong>B₃</strong>, the braid group on three strands. This group is:</p>
+                <ul>
+                    <li><strong>Non-abelian</strong>: σ₁σ₂ ≠ σ₂σ₁</li>
+                    <li><strong>Infinite</strong>: Unlimited tangle configurations</li>
+                    <li><strong>Algorithmically complex</strong>: The word problem is solvable but non-trivial</li>
+                </ul>
+
+                <div class="formula">
+                B₃ = ⟨σ₁, σ₂ | σ₁σ₂σ₁ = σ₂σ₁σ₂⟩<br>
+                (The Yang-Baxter relation)
+                </div>
+
+                <p>The defining relation σ₁σ₂σ₁ = σ₂σ₁σ₂ is the famous <strong>Yang-Baxter equation</strong>, fundamental to quantum groups, knot theory, and statistical mechanics. This means our dogs are performing quantum algebra!</p>
+
+                <h2>Mathematical Framework</h2>
+
+                <h3>Braid Groups and Generators</h3>
+                <p>A braid on <em>n</em> strands has <em>n-1</em> generators. For three dogs:</p>
+                <ul>
+                    <li><strong>σ₁</strong>: Dog B passes over dog A (rightward crossing)</li>
+                    <li><strong>σ₂</strong>: Dog C passes over dog B</li>
+                    <li><strong>σ₁⁻¹</strong>: Dog B passes under dog A (leftward crossing)</li>
+                    <li><strong>σ₂⁻¹</strong>: Dog C passes under dog B</li>
+                </ul>
+
+                <p>Any tangle configuration can be represented as a <strong>braid word</strong>: a sequence of these generators. For example: σ₁σ₂σ₁⁻¹ represents "B over A, then C over B, then B under A."</p>
+
+                <h3>The Word Problem</h3>
+                <p>Given two braid words, are they equivalent under the braid relations? This is the <strong>word problem</strong> for B₃. It was solved by Artin in 1947, but practical solutions require sophisticated algorithms.</p>
+
+                <h3>Measuring Tangle Complexity</h3>
+                <p>We can quantify how tangled the leashes are using several metrics:</p>
+
+                <ul>
+                    <li><strong>Word length</strong>: Number of generators in the braid word</li>
+                    <li><strong>Crossing number</strong>: Minimum crossings in any representation</li>
+                    <li><strong>Garside normal form</strong>: A canonical representation that minimizes complexity</li>
+                    <li><strong>Writhe</strong>: The signed sum of crossings (positive minus negative)</li>
+                </ul>
+
+                <div class="formula">
+                Writhe(w) = Σᵢ sign(σᵢ)<br>
+                where sign(σᵢ) = +1, sign(σᵢ⁻¹) = -1
+                </div>
+
+                <h2>Solution Approaches</h2>
+
+                <h3>1. Greedy Heuristics</h3>
+                <p>Simple strategies that work locally but may not find optimal solutions:</p>
+                <ul>
+                    <li><strong>Nearest-neighbor uncrossing</strong>: Always undo the most recent crossing</li>
+                    <li><strong>Writhe minimization</strong>: Move to reduce the signed crossing number</li>
+                </ul>
+                <p><strong>Limitation</strong>: May get stuck in local minima. Consider σ₁σ₂σ₁⁻¹σ₂⁻¹ (a commutator) which is topologically trivial but requires 4 moves to simplify.</p>
+
+                <h3>2. Normal Form Reduction</h3>
+                <p>Convert the braid to <strong>Garside normal form</strong>, a canonical representation that reveals the true complexity. The Garside algorithm:</p>
+                <ol>
+                    <li>Decompose the braid into positive and negative parts</li>
+                    <li>Apply the fundamental element Δ = σ₁σ₂...σₙ₋₁</li>
+                    <li>Reduce to canonical form using summit reduction</li>
+                </ol>
+
+                <h3>3. Topological Invariants</h3>
+                <p>Use <strong>knot invariants</strong> to detect when leashes are fully untangled:</p>
+                <ul>
+                    <li><strong>Alexander polynomial</strong></li>
+                    <li><strong>Jones polynomial</strong></li>
+                    <li><strong>HOMFLY polynomial</strong></li>
+                </ul>
+                <p>If the invariant equals that of the identity braid, the leashes are untangled. However, computing these is O(2ⁿ) in the number of crossings.</p>
+
+                <h3>4. Path Planning Algorithms</h3>
+                <p>Treat this as a motion planning problem in configuration space:</p>
+                <ul>
+                    <li><strong>RRT (Rapidly-exploring Random Tree)</strong>: Sample random positions and connect valid paths</li>
+                    <li><strong>A* with tangle heuristic</strong>: Use writhe or word length as a heuristic</li>
+                    <li><strong>Dynamic programming</strong>: For small state spaces, enumerate all possibilities</li>
+                </ul>
+
+                <h2>Computational Complexity</h2>
+
+                <p>The complexity of solving the n-dog leash problem scales dramatically:</p>
+
+                <div class="formula">
+                Word Problem (decidability): Polynomial in word length (Artin, 1947)<br>
+                Shortest Word Problem (optimization): NP-hard (believed)<br>
+                Optimal Untangling: PSPACE-hard for general braids
+                </div>
+
+                <p>This means:</p>
+                <ul>
+                    <li>We can <em>verify</em> if a sequence untangles the leashes efficiently</li>
+                    <li>We cannot <em>find</em> the shortest sequence efficiently in general</li>
+                    <li>For four or more dogs, even approximations become intractable</li>
+                </ul>
+
+                <h2>Connections to Other Fields</h2>
+
+                <h3>Quantum Computing</h3>
+                <p>The Yang-Baxter equation that defines B₃ is central to:</p>
+                <ul>
+                    <li><strong>Anyonic braiding</strong>: Topological quantum computation uses braid statistics</li>
+                    <li><strong>Quantum gates</strong>: Braiding operations implement universal quantum computation</li>
+                    <li><strong>Jones polynomial</strong>: Computable by quantum algorithms (Aharonov et al.)</li>
+                </ul>
+
+                <h3>Statistical Mechanics</h3>
+                <p>The <strong>braid group representations</strong> appear in:</p>
+                <ul>
+                    <li>Yang-Baxter models (exactly solvable systems)</li>
+                    <li>Knot polynomials from partition functions</li>
+                    <li>Conformal field theory and anyons</li>
+                </ul>
+
+                <h3>Robotics and Motion Planning</h3>
+                <p>Multi-robot coordination with cable management is isomorphic to the leash problem:</p>
+                <ul>
+                    <li>Surgical robots with flexible instruments</li>
+                    <li>Cable-driven parallel robots</li>
+                    <li>Tethered drone swarms</li>
+                </ul>
+
+                <h2>Open Problems and Extensions</h2>
+
+                <h3>Theoretical Questions</h3>
+                <ul>
+                    <li>Is there a polynomial-time algorithm for optimal untangling?</li>
+                    <li>What is the average-case complexity for random tangles?</li>
+                    <li>Can machine learning discover better heuristics than known algorithms?</li>
+                </ul>
+
+                <h3>Practical Extensions</h3>
+                <ul>
+                    <li><strong>Dynamic leashes</strong>: Variable-length leashes (harder!)</li>
+                    <li><strong>Obstacles</strong>: Trees, poles (adds fundamental group of plane minus points)</li>
+                    <li><strong>Multiple walkers</strong>: Each person has multiple dogs</li>
+                    <li><strong>Non-planar</strong>: Hills, stairs (3D braids, even more complex)</li>
+                </ul>
+
+                <h2>References and Further Reading</h2>
+                <ul>
+                    <li>Artin, E. (1947). "Theory of Braids." <em>Annals of Mathematics</em></li>
+                    <li>Birman, J. (1974). <em>Braids, Links, and Mapping Class Groups</em></li>
+                    <li>Kassel, C. & Turaev, V. (2008). <em>Braid Groups</em></li>
+                    <li>Garside, F.A. (1969). "The braid group and other groups." <em>Quarterly Journal of Mathematics</em></li>
+                    <li>Freedman, M., Kitaev, A., Wang, Z. (2002). "Simulation of Topological Field Theories by Quantum Computers"</li>
+                </ul>
+
+                <h2>Conclusion</h2>
+                <p>The three-dog leash problem exemplifies how everyday phenomena encode deep mathematical structure. The transition from two to three dogs marks a phase change in complexity—from abelian to non-abelian groups, from trivial to algorithmically hard, from mundane to quantum-mechanical.</p>
+
+                <p>Every time you untangle your dogs' leashes, you're solving a problem that connects to the frontiers of topology, quantum computing, and complexity theory. Mathematics is everywhere, even on your morning walk.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="crossing-alert" id="crossingAlert"></div>
+
+    <script src="js/vector.js"></script>
+    <script src="js/physics.js"></script>
+    <script src="js/braid.js"></script>
+    <script src="js/entities.js"></script>
+    <script src="js/renderer.js"></script>
+    <script src="js/simulation.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
