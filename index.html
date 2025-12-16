@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>It's Knot Fun - Three Dog Leash Detangle Simulation</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- Three.js for 3D rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -19,6 +21,87 @@
 
             <div class="canvas-container">
                 <canvas id="simulationCanvas"></canvas>
+
+                <!-- State Cards Overlay -->
+                <div class="state-cards-overlay" id="stateCardsOverlay">
+                    <!-- Walker State Card -->
+                    <div class="state-card walker-card" id="walkerStateCard">
+                        <div class="state-card-header">
+                            <span class="state-card-icon">🚶</span>
+                            <span class="state-card-name">Walker</span>
+                        </div>
+                        <div class="state-card-body">
+                            <div class="state-indicator" id="walkerStateIndicator">
+                                <span class="state-label">State:</span>
+                                <span class="state-value" id="walkerStateValue">Walking</span>
+                            </div>
+                            <div class="state-detail" id="walkerHandHeight">
+                                <span class="detail-label">Hand:</span>
+                                <span class="detail-value" id="walkerHandValue">Normal</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dog State Cards -->
+                    <div class="dog-cards-container" id="dogCardsContainer">
+                        <div class="state-card dog-card dog-a" id="dogACard">
+                            <div class="state-card-header">
+                                <span class="state-card-icon">🐕</span>
+                                <span class="state-card-name">Dog A</span>
+                            </div>
+                            <div class="state-card-body">
+                                <div class="state-indicator">
+                                    <span class="state-label">Behavior:</span>
+                                    <span class="state-value" id="dogABehavior">Wandering</span>
+                                </div>
+                                <div class="state-detail">
+                                    <span class="detail-label">Energy:</span>
+                                    <div class="energy-bar" id="dogAEnergy">
+                                        <div class="energy-fill"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="state-card dog-card dog-b" id="dogBCard">
+                            <div class="state-card-header">
+                                <span class="state-card-icon">🐕</span>
+                                <span class="state-card-name">Dog B</span>
+                            </div>
+                            <div class="state-card-body">
+                                <div class="state-indicator">
+                                    <span class="state-label">Behavior:</span>
+                                    <span class="state-value" id="dogBBehavior">Wandering</span>
+                                </div>
+                                <div class="state-detail">
+                                    <span class="detail-label">Energy:</span>
+                                    <div class="energy-bar" id="dogBEnergy">
+                                        <div class="energy-fill"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="state-card dog-card dog-c" id="dogCCard">
+                            <div class="state-card-header">
+                                <span class="state-card-icon">🐕</span>
+                                <span class="state-card-name">Dog C</span>
+                            </div>
+                            <div class="state-card-body">
+                                <div class="state-indicator">
+                                    <span class="state-label">Behavior:</span>
+                                    <span class="state-value" id="dogCBehavior">Wandering</span>
+                                </div>
+                                <div class="state-detail">
+                                    <span class="detail-label">Energy:</span>
+                                    <div class="energy-bar" id="dogCEnergy">
+                                        <div class="energy-fill"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="controls">
@@ -53,6 +136,14 @@
                     <span class="stat-label">Tangle Complexity</span>
                 </div>
                 <div class="stat">
+                    <span class="stat-value" id="activeTangles">0</span>
+                    <span class="stat-label">Active Tangles</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="capstanFriction">1.0x</span>
+                    <span class="stat-label">Capstan Friction</span>
+                </div>
+                <div class="stat">
                     <span class="stat-value" id="timeElapsed">0s</span>
                     <span class="stat-label">Time Elapsed</span>
                 </div>
@@ -74,54 +165,126 @@
                 <h2>Introduction: A Topological Problem</h2>
                 <p>The three-dog leash problem sits at the intersection of <strong>braid theory</strong>, <strong>topology</strong>, and <strong>computational complexity</strong>. What appears as a simple daily frustration—untangling dog leashes—reveals profound mathematical structures that have occupied mathematicians since the early 20th century.</p>
 
+                <p class="doodle-annotation">But first, let's see what makes three dogs special...</p>
+
                 <h2>Why Three Dogs Changes Everything</h2>
 
-                <h3>The Two-Dog Case (Trivial)</h3>
-                <p>With two dogs, the problem is degenerate. Any configuration can be resolved by having one dog walk around the other in the appropriate direction. The <strong>braid group B₂</strong> is infinite cyclic (isomorphic to ℤ), meaning every tangle can be represented as a power of a single generator σ₁ (dog A crossing over dog B).</p>
+                <!-- Interactive Comparison Visualizer -->
+                <div class="interactive-section">
+                    <h3>Try It Yourself: 2 Dogs vs 3 Dogs</h3>
+                    <p>Click the buttons below to add crossings. Watch how the complexity differs!</p>
+                    <div id="comparison-viz-container"></div>
+                </div>
 
-                <div class="formula">
-                B₂ = ⟨σ₁ | ⟩ ≅ ℤ<br>
-                Solution: Apply σ₁⁻ⁿ to undo n crossings
+                <!-- Physics Demo: Close-up thick rope simulation -->
+                <div class="interactive-section">
+                    <h3>Watch the Physics: Thick Rope Demo</h3>
+                    <p>See real-time simulated dog movement with thick, visible leashes. Notice how crossings accumulate differently!</p>
+                    <div id="physics-demo-container"></div>
+                </div>
+
+                <h3>The Two-Dog Case (Trivial)</h3>
+                <p>With two dogs, the problem is degenerate. Any configuration can be resolved by having one dog walk around the other in the appropriate direction. The <strong>braid group B₂</strong> is infinite cyclic (isomorphic to ℤ), meaning every tangle can be represented as a power of a single generator σ₁.</p>
+
+                <div class="explainer-card graph-paper">
+                    <h3 class="card-term">Braid Group B₂</h3>
+                    <p class="card-intuition">Think of it like a dial that can spin infinitely in either direction. +1 turn, -1 turn, they always cancel out perfectly.</p>
+                    <p class="card-formal">B₂ = ⟨σ₁ | ⟩ ≅ ℤ — An infinite cyclic group with one generator</p>
+                    <p class="card-example">5 clockwise crossings? Just do 5 counterclockwise. Done!</p>
                 </div>
 
                 <h3>The Three-Dog Case (Non-Trivial)</h3>
-                <p>With three dogs, we enter the realm of <strong>B₃</strong>, the braid group on three strands. This group is:</p>
-                <ul>
-                    <li><strong>Non-abelian</strong>: σ₁σ₂ ≠ σ₂σ₁</li>
-                    <li><strong>Infinite</strong>: Unlimited tangle configurations</li>
-                    <li><strong>Algorithmically complex</strong>: The word problem is solvable but non-trivial</li>
-                </ul>
+                <p>With three dogs, we enter the realm of <strong>B₃</strong>, the braid group on three strands. This group is fundamentally different:</p>
 
-                <div class="formula">
-                B₃ = ⟨σ₁, σ₂ | σ₁σ₂σ₁ = σ₂σ₁σ₂⟩<br>
-                (The Yang-Baxter relation)
+                <div class="chalk-comparison">
+                    <div class="chalk-column">
+                        <h4 class="chalk-header">TWO STRANDS (B₂)</h4>
+                        <ul class="chalk-list">
+                            <li>One generator: σ₁</li>
+                            <li>Abelian (order doesn't matter)</li>
+                            <li>σ₁σ₁⁻¹ = ε always</li>
+                            <li class="chalk-analogy">Like a single dial</li>
+                        </ul>
+                        <div class="chalk-verdict easy">✓ Always untangles</div>
+                    </div>
+                    <div class="chalk-divider">vs</div>
+                    <div class="chalk-column">
+                        <h4 class="chalk-header">THREE STRANDS (B₃)</h4>
+                        <ul class="chalk-list">
+                            <li>Two generators: σ₁, σ₂</li>
+                            <li>NON-abelian (order MATTERS!)</li>
+                            <li>σ₁σ₂ ≠ σ₂σ₁</li>
+                            <li class="chalk-analogy">Like a Rubik's cube</li>
+                        </ul>
+                        <div class="chalk-verdict hard">⚠ Genuinely hard</div>
+                    </div>
                 </div>
 
-                <p>The defining relation σ₁σ₂σ₁ = σ₂σ₁σ₂ is the famous <strong>Yang-Baxter equation</strong>, fundamental to quantum groups, knot theory, and statistical mechanics. This means our dogs are performing quantum algebra!</p>
+                <div class="explainer-card chalkboard">
+                    <h3 class="card-term">Non-Abelian</h3>
+                    <p class="card-intuition">The ORDER of operations changes the result. "Left then right" ≠ "Right then left"</p>
+                    <p class="card-formal">A group where ab ≠ ba for some elements a, b</p>
+                    <p class="card-example">Rotating a Rubik's cube: R then U gives different result than U then R</p>
+                    <p class="card-complexity">This is what makes 3-dog untangling genuinely hard!</p>
+                </div>
 
                 <h2>Mathematical Framework</h2>
 
                 <h3>Braid Groups and Generators</h3>
-                <p>A braid on <em>n</em> strands has <em>n-1</em> generators. For three dogs:</p>
+                <p>A braid on <em>n</em> strands has <em>n-1</em> generators. For three dogs, imagine holding three leashes. Each generator describes one specific crossing:</p>
+
+                <!-- Interactive Generator Builder -->
+                <div class="interactive-section">
+                    <h4 style="font-family: 'Caveat', cursive; font-size: 22px; color: var(--ink-blue); margin-top: 0;">Build Your Own Braid</h4>
+                    <p>Click the generators below to compose a braid word and watch it form in 3D!</p>
+                    <div id="generator-builder-container"></div>
+                </div>
+
+                <p>The generators work as follows:</p>
                 <ul>
-                    <li><strong>σ₁</strong>: Dog B passes over dog A (rightward crossing)</li>
-                    <li><strong>σ₂</strong>: Dog C passes over dog B</li>
-                    <li><strong>σ₁⁻¹</strong>: Dog B passes under dog A (leftward crossing)</li>
-                    <li><strong>σ₂⁻¹</strong>: Dog C passes under dog B</li>
+                    <li><strong>σ₁</strong> — Left strand crosses OVER middle strand</li>
+                    <li><strong>σ₁⁻¹</strong> — Left strand crosses UNDER middle strand</li>
+                    <li><strong>σ₂</strong> — Middle strand crosses OVER right strand</li>
+                    <li><strong>σ₂⁻¹</strong> — Middle strand crosses UNDER right strand</li>
                 </ul>
 
-                <p>Any tangle configuration can be represented as a <strong>braid word</strong>: a sequence of these generators. For example: σ₁σ₂σ₁⁻¹ represents "B over A, then C over B, then B under A."</p>
+                <div class="explainer-card graph-paper">
+                    <h3 class="card-term">Braid Word</h3>
+                    <p class="card-intuition">A recipe for tangling. Each symbol is one crossing move.</p>
+                    <p class="card-formal">A sequence of generators and their inverses: σ₁σ₂σ₁⁻¹...</p>
+                    <p class="card-example"><span class="highlight-formula">σ₁σ₂σ₁⁻¹</span> = "Left over middle, then middle over right, then left under middle"</p>
+                </div>
+
+                <!-- Yang-Baxter Interactive Demo -->
+                <div class="interactive-section">
+                    <h3>The Magic of Yang-Baxter</h3>
+                    <p>Here's the amazing part: some different-looking tangles are actually the same! The <strong>Yang-Baxter equation</strong> says that σ₁σ₂σ₁ = σ₂σ₁σ₂. Watch both paths lead to identical results:</p>
+                    <div id="yang-baxter-container"></div>
+                </div>
+
+                <div class="explainer-card chalkboard">
+                    <h3 class="card-term">Yang-Baxter Equation</h3>
+                    <p class="card-intuition">Two different dance moves, same final positions. The math of "it doesn't matter which way you went."</p>
+                    <p class="card-formal">σ₁σ₂σ₁ = σ₂σ₁σ₂ — The defining relation of B₃</p>
+                    <p class="card-example">This same equation appears in quantum computing, statistical mechanics, and knot theory!</p>
+                    <p class="card-complexity">Your dogs are performing quantum algebra on every walk.</p>
+                </div>
 
                 <h3>The Word Problem</h3>
-                <p>Given two braid words, are they equivalent under the braid relations? This is the <strong>word problem</strong> for B₃. It was solved by Artin in 1947, but practical solutions require sophisticated algorithms.</p>
+                <div class="explainer-card graph-paper">
+                    <h3 class="card-term">The Word Problem</h3>
+                    <p class="card-intuition">Given two different-looking tangle recipes, do they produce the same tangle?</p>
+                    <p class="card-formal">Formally: Given braid words w₁ and w₂, determine if they represent the same element of Bₙ.</p>
+                    <p class="card-example">Is σ₁σ₂σ₁ the same as σ₂σ₁σ₂? (Yes! Yang-Baxter tells us so)</p>
+                    <p class="card-complexity">Solved by Artin (1947) — polynomial time in word length</p>
+                </div>
 
                 <h3>Measuring Tangle Complexity</h3>
                 <p>We can quantify how tangled the leashes are using several metrics:</p>
 
                 <ul>
                     <li><strong>Word length</strong>: Number of generators in the braid word</li>
-                    <li><strong>Crossing number</strong>: Minimum crossings in any representation</li>
-                    <li><strong>Garside normal form</strong>: A canonical representation that minimizes complexity</li>
+                    <li><strong>Crossing number</strong>: Minimum crossings in any equivalent representation</li>
                     <li><strong>Writhe</strong>: The signed sum of crossings (positive minus negative)</li>
                 </ul>
 
@@ -130,7 +293,26 @@
                 where sign(σᵢ) = +1, sign(σᵢ⁻¹) = -1
                 </div>
 
-                <h2>Solution Approaches</h2>
+                <p class="doodle-annotation">Writhe = 0 doesn't mean untangled! (but it's a good sign)</p>
+
+                <!-- Famous Knots Explorer -->
+                <div class="interactive-section">
+                    <h3>Famous Knots Gallery</h3>
+                    <p>Explore the mathematical knots that have fascinated mathematicians for centuries. Drag to rotate!</p>
+                    <div id="famous-knots-container"></div>
+                </div>
+
+                <div class="explainer-card chalkboard">
+                    <h3 class="card-term">Knot vs Braid</h3>
+                    <p class="card-intuition">A <strong>braid</strong> is an open tangle (strands go from top to bottom). A <strong>knot</strong> is what you get when you connect the ends!</p>
+                    <p class="card-formal">Markov's Theorem: Every knot/link can be represented as the closure of some braid.</p>
+                    <p class="card-example">The trefoil knot = σ₁³ (three left-over-middle crossings, ends connected)</p>
+                    <p class="card-complexity">Alexander (1923) — Braids are the key to understanding ALL knots!</p>
+                </div>
+
+                <h2>Untangling Strategies</h2>
+
+                <p>This isn't just about abstract mathematics—it's about helping real walkers with real dogs. How do we actually untangle?</p>
 
                 <h3>1. Greedy Heuristics</h3>
                 <p>Simple strategies that work locally but may not find optimal solutions:</p>
@@ -138,36 +320,219 @@
                     <li><strong>Nearest-neighbor uncrossing</strong>: Always undo the most recent crossing</li>
                     <li><strong>Writhe minimization</strong>: Move to reduce the signed crossing number</li>
                 </ul>
-                <p><strong>Limitation</strong>: May get stuck in local minima. Consider σ₁σ₂σ₁⁻¹σ₂⁻¹ (a commutator) which is topologically trivial but requires 4 moves to simplify.</p>
 
-                <h3>2. Normal Form Reduction</h3>
-                <p>Convert the braid to <strong>Garside normal form</strong>, a canonical representation that reveals the true complexity. The Garside algorithm:</p>
-                <ol>
-                    <li>Decompose the braid into positive and negative parts</li>
-                    <li>Apply the fundamental element Δ = σ₁σ₂...σₙ₋₁</li>
-                    <li>Reduce to canonical form using summit reduction</li>
-                </ol>
+                <div class="explainer-card graph-paper">
+                    <h3 class="card-term">Local Minimum Trap</h3>
+                    <p class="card-intuition">Sometimes you have to make things temporarily worse to make them better.</p>
+                    <p class="card-example"><span class="highlight-formula">σ₁σ₂σ₁⁻¹σ₂⁻¹</span> (a commutator) is topologically trivial—the strands end where they started—but greedy methods can't see it.</p>
+                    <p class="card-complexity">Requires 4 moves to simplify, even though the result is identity!</p>
+                </div>
 
-                <h3>3. Topological Invariants</h3>
-                <p>Use <strong>knot invariants</strong> to detect when leashes are fully untangled:</p>
-                <ul>
-                    <li><strong>Alexander polynomial</strong></li>
-                    <li><strong>Jones polynomial</strong></li>
-                    <li><strong>HOMFLY polynomial</strong></li>
-                </ul>
-                <p>If the invariant equals that of the identity braid, the leashes are untangled. However, computing these is O(2ⁿ) in the number of crossings.</p>
+                <h3>2. The Garside Algorithm</h3>
+                <div class="explainer-card chalkboard">
+                    <h3 class="card-term">Garside Normal Form</h3>
+                    <p class="card-intuition">A canonical way to write any braid that reveals its true complexity.</p>
+                    <p class="card-formal">Decompose braid into fundamental elements Δ and positive words.</p>
+                    <p class="card-example">Like reducing fractions: 6/8 → 3/4. Same value, simpler form.</p>
+                    <p class="card-complexity">F.A. Garside (1969) — The braid's "true name"</p>
+                </div>
 
-                <h3>4. Path Planning Algorithms</h3>
-                <p>Treat this as a motion planning problem in configuration space:</p>
-                <ul>
-                    <li><strong>RRT (Rapidly-exploring Random Tree)</strong>: Sample random positions and connect valid paths</li>
-                    <li><strong>A* with tangle heuristic</strong>: Use writhe or word length as a heuristic</li>
-                    <li><strong>Dynamic programming</strong>: For small state spaces, enumerate all possibilities</li>
-                </ul>
+                <h3>3. Physical Solutions: The Leash Holder Design Challenge</h3>
+                <p>But here's the real question: <strong>Can we design a physical device that prevents tangles in the first place?</strong></p>
+
+                <div class="explainer-card graph-paper">
+                    <h3 class="card-term">The Engineering Challenge</h3>
+                    <p class="card-intuition">Three dogs moving independently in 2D space, attached to one hand. How do we prevent the inevitable?</p>
+                    <div class="design-constraints">
+                        <div class="constraint"><span class="constraint-icon">🦮</span> Dogs must move freely (5-15 foot radius)</div>
+                        <div class="constraint"><span class="constraint-icon">🔄</span> Crossings should auto-resolve or be easily undone</div>
+                        <div class="constraint"><span class="constraint-icon">✋</span> One-handed operation (other hand for treats/phone/coffee)</div>
+                        <div class="constraint"><span class="constraint-icon">💪</span> Handle 20-80 lbs pull per dog</div>
+                        <div class="constraint"><span class="constraint-icon">⚡</span> Quick release for emergencies</div>
+                    </div>
+                </div>
+
+                <!-- Device Design Gallery -->
+                <div class="device-gallery">
+
+                    <!-- Design 1: Orbital Swivel -->
+                    <div class="device-card">
+                        <h4 class="device-title">Design 1: The Orbital Swivel</h4>
+                        <div class="device-diagram">
+                            <img src="images/device-orbital-swivel_2025-11-28T06-59-28-820Z.png" alt="Orbital Swivel device render" class="device-render">
+                            <p class="diagram-caption">Three attachment points orbit freely around central hub</p>
+                        </div>
+                        <div class="device-description">
+                            <p><strong>Concept:</strong> Three leash attachment points on a freely-rotating ring around a central hub. As dogs circle each other, the ring rotates to maintain minimum tension.</p>
+                            <div class="device-analysis">
+                                <div class="analysis-pro">
+                                    <span class="analysis-label">✓ Pros</span>
+                                    <ul>
+                                        <li>Simple mechanical design</li>
+                                        <li>Passive operation (no batteries)</li>
+                                        <li>Handles σ₁ and σ₂ by rotation</li>
+                                    </ul>
+                                </div>
+                                <div class="analysis-con">
+                                    <span class="analysis-label">✗ Cons</span>
+                                    <ul>
+                                        <li>Cannot resolve σ₁σ₂ sequences</li>
+                                        <li>Cumulative crossings still build</li>
+                                        <li>Ring can jam under tension</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <p class="device-verdict"><strong>Verdict:</strong> Reduces tangles but doesn't prevent them. Good for casual walks.</p>
+                        </div>
+                    </div>
+
+                    <!-- Design 2: Vertical Stack -->
+                    <div class="device-card">
+                        <h4 class="device-title">Design 2: The Vertical Stack</h4>
+                        <div class="device-diagram">
+                            <img src="images/device-vertical-stack_2025-11-28T06-59-38-596Z.png" alt="Vertical Stack device render" class="device-render">
+                            <p class="diagram-caption">Three levels with independent 360° swivels</p>
+                        </div>
+                        <div class="device-description">
+                            <p><strong>Concept:</strong> Leashes attach at three different heights, each with its own 360° swivel. Crossings in 2D plane don't tangle because dogs are on different "floors."</p>
+                            <div class="device-analysis">
+                                <div class="analysis-pro">
+                                    <span class="analysis-label">✓ Pros</span>
+                                    <ul>
+                                        <li>Eliminates in-plane crossings!</li>
+                                        <li>Each dog has independent rotation</li>
+                                        <li>Works for any braid sequence</li>
+                                    </ul>
+                                </div>
+                                <div class="analysis-con">
+                                    <span class="analysis-label">✗ Cons</span>
+                                    <ul>
+                                        <li>Doesn't prevent leash-to-leash contact</li>
+                                        <li>Level 1 dog can wrap around Level 3's line</li>
+                                        <li>Bulkier design</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <p class="device-verdict"><strong>Verdict:</strong> Best passive solution! Theoretically eliminates B₃ tangles if leashes stay separated.</p>
+                        </div>
+                    </div>
+
+                    <!-- Design 3: Figure-Eight Track -->
+                    <div class="device-card">
+                        <h4 class="device-title">Design 3: The Figure-Eight Resolver</h4>
+                        <div class="device-diagram">
+                            <img src="images/device-figure-eight_2025-11-28T06-59-48-497Z.png" alt="Figure-Eight Resolver device render" class="device-render">
+                            <p class="diagram-caption">Leashes slide along figure-8 track, auto-resolving crossings</p>
+                        </div>
+                        <div class="device-description">
+                            <p><strong>Concept:</strong> Leash attachment points slide along a figure-8 shaped track. When dogs cross, the guides naturally follow the track, passing through the center crossing point in sequence.</p>
+                            <div class="device-analysis">
+                                <div class="analysis-pro">
+                                    <span class="analysis-label">✓ Pros</span>
+                                    <ul>
+                                        <li>Actively resolves single crossings</li>
+                                        <li>Visual feedback of tangle state</li>
+                                        <li>Elegant mathematical design</li>
+                                    </ul>
+                                </div>
+                                <div class="analysis-con">
+                                    <span class="analysis-label">✗ Cons</span>
+                                    <ul>
+                                        <li>Complex mechanism, many failure points</li>
+                                        <li>Still accumulates crossings over time</li>
+                                        <li>Friction in track under tension</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <p class="device-verdict"><strong>Verdict:</strong> Beautiful concept but mechanically complex. Better as art piece than practical tool.</p>
+                        </div>
+                    </div>
+
+                    <!-- Design 4: Active System -->
+                    <div class="device-card">
+                        <h4 class="device-title">Design 4: The Smart Untangler</h4>
+                        <div class="device-diagram">
+                            <img src="images/device-smart-untangler_2025-11-28T06-59-59-116Z.png" alt="Smart Untangler device render" class="device-render">
+                            <p class="diagram-caption">Electronic hub with display, sensors, and haptic feedback</p>
+                        </div>
+                        <div class="device-description">
+                            <p><strong>Concept:</strong> Electronic system with angle sensors on each leash, tracking the braid word in real-time. Display shows current tangle state, haptic feedback guides you through untangling moves.</p>
+                            <div class="device-analysis">
+                                <div class="analysis-pro">
+                                    <span class="analysis-label">✓ Pros</span>
+                                    <ul>
+                                        <li>Perfect tracking of tangle state</li>
+                                        <li>Guided untangling instructions</li>
+                                        <li>Could use ML for optimization</li>
+                                    </ul>
+                                </div>
+                                <div class="analysis-con">
+                                    <span class="analysis-label">✗ Cons</span>
+                                    <ul>
+                                        <li>Batteries, electronics, complexity</li>
+                                        <li>Expensive to manufacture</li>
+                                        <li>Overkill for most dog walkers</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <p class="device-verdict"><strong>Verdict:</strong> For the serious dog-walker/mathematician. Or a great research project!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- The Winning Design -->
+                <div class="explainer-card chalkboard">
+                    <h3 class="card-term">🏆 The Winning Design: Hybrid Approach</h3>
+                    <p class="card-intuition">Combine the vertical stack (Design 2) with simple visual indicators!</p>
+                    <div class="winning-design-diagram">
+<pre style="font-size: 14px; line-height: 1.4;">
+    PRACTICAL 3-LEASH HOLDER v1.0
+
+    ┌─────────────────────────────────┐
+    │         HANDLE GRIP             │
+    │   Ergonomic, one-hand operation │
+    └──────────────┬──────────────────┘
+                   │
+    ┌──────────────┴──────────────────┐
+    │     COLOR-CODED INDICATOR       │
+    │  ┌─RED─┐ ┌─GRN─┐ ┌─BLU─┐       │
+    │  │  ↻  │ │  ↻  │ │  ↻  │       │ ← Visual rotation counters
+    │  │ +2  │ │  0  │ │ -1  │       │   (twist accumulation)
+    │  └──┬──┘ └──┬──┘ └──┬──┘       │
+    └─────┼──────┼──────┼────────────┘
+          │      │      │
+     ┌────┴──────┴──────┴────┐
+     │   VERTICAL SEPARATOR   │
+     │     with 3 levels      │
+     ├────────────────────────┤
+  ───┤ ○ TOP (small dog)     ├─── Red leash, 360° swivel
+     ├────────────────────────┤
+  ───┤ ● MID (med dog)       ├─── Green leash, 360° swivel
+     ├────────────────────────┤
+  ───┤ ◆ LOW (large dog)     ├─── Blue leash, 360° swivel
+     └────────────────────────┘
+           ↓
+       Quick-release
+       emergency latch
+</pre>
+                    </div>
+                    <p class="card-example"><strong>Key Features:</strong></p>
+                    <ul style="margin: 10px 0; padding-left: 20px; color: rgba(255,255,255,0.9);">
+                        <li>Vertical separation eliminates in-plane B₃ crossings</li>
+                        <li>Color-coded twist counters show when swivels need manual reset</li>
+                        <li>Position dogs by size (heaviest on bottom for stability)</li>
+                        <li>No batteries needed - purely mechanical</li>
+                    </ul>
+                    <p class="card-complexity">Estimated cost: $25-40 to manufacture. Patent pending? 😉</p>
+                </div>
+
+                <!-- Call to action -->
+                <div class="interactive-section" style="text-align: center; margin: 30px 0;">
+                    <h4 style="font-family: 'Caveat', cursive; font-size: 24px; color: var(--chalk);">Want to build one?</h4>
+                    <p>The full CAD files and 3D-printable design will be available soon. For now, try the simulation above to understand why three dogs is fundamentally harder than two!</p>
+                </div>
 
                 <h2>Computational Complexity</h2>
-
-                <p>The complexity of solving the n-dog leash problem scales dramatically:</p>
 
                 <div class="formula">
                 Word Problem (decidability): Polynomial in word length (Artin, 1947)<br>
@@ -182,47 +547,310 @@
                     <li>For four or more dogs, even approximations become intractable</li>
                 </ul>
 
+                <p class="doodle-annotation">Four dogs? Don't even try. Hire a professional mathematician.</p>
+
                 <h2>Connections to Other Fields</h2>
 
                 <h3>Quantum Computing</h3>
-                <p>The Yang-Baxter equation that defines B₃ is central to:</p>
-                <ul>
-                    <li><strong>Anyonic braiding</strong>: Topological quantum computation uses braid statistics</li>
-                    <li><strong>Quantum gates</strong>: Braiding operations implement universal quantum computation</li>
-                    <li><strong>Jones polynomial</strong>: Computable by quantum algorithms (Aharonov et al.)</li>
-                </ul>
-
-                <h3>Statistical Mechanics</h3>
-                <p>The <strong>braid group representations</strong> appear in:</p>
-                <ul>
-                    <li>Yang-Baxter models (exactly solvable systems)</li>
-                    <li>Knot polynomials from partition functions</li>
-                    <li>Conformal field theory and anyons</li>
-                </ul>
+                <div class="explainer-card chalkboard">
+                    <h3 class="card-term">Topological Quantum Computing</h3>
+                    <p class="card-intuition">Quantum computers that use braiding particles instead of flipping bits!</p>
+                    <p class="card-formal">Anyonic braiding implements fault-tolerant quantum gates via braid group representations.</p>
+                    <p class="card-example">Microsoft's Station Q is building quantum computers based on this principle.</p>
+                    <p class="card-complexity">If you solve dog leash tangles, you're doing quantum computation prep!</p>
+                </div>
 
                 <h3>Robotics and Motion Planning</h3>
-                <p>Multi-robot coordination with cable management is isomorphic to the leash problem:</p>
-                <ul>
-                    <li>Surgical robots with flexible instruments</li>
-                    <li>Cable-driven parallel robots</li>
-                    <li>Tethered drone swarms</li>
-                </ul>
+                <p><strong>Solving this problem would also solve:</strong></p>
 
-                <h2>Open Problems and Extensions</h2>
+                <div class="applications-gallery">
+                    <div class="application-card">
+                        <img src="images/app-surgical-robotics_2025-11-28T07-01-41-496Z.png" alt="Surgical robotics">
+                        <div class="application-card-content">
+                            <h4>🏥 Surgical Robotics</h4>
+                            <p>Multiple flexible instruments in body cavity must not tangle during operation. Lives depend on efficient untangling!</p>
+                        </div>
+                    </div>
+                    <div class="application-card">
+                        <img src="images/app-tethered-drones_2025-11-28T07-01-51-456Z.png" alt="Tethered drone swarms">
+                        <div class="application-card-content">
+                            <h4>🚁 Tethered Drone Swarms</h4>
+                            <p>Drones connected to base station by cables. Formation changes create crossings. Tangled = crashed!</p>
+                        </div>
+                    </div>
+                    <div class="application-card">
+                        <img src="images/app-cable-robot_2025-11-28T07-02-00-652Z.png" alt="Cable-driven parallel robots">
+                        <div class="application-card-content">
+                            <h4>🏭 Cable-Driven Robots</h4>
+                            <p>3D printers, motion platforms, cranes. Multiple cables must not interfere. Same braid group mathematics!</p>
+                        </div>
+                    </div>
+                    <div class="application-card">
+                        <img src="images/app-stage-rigging_2025-11-28T07-02-13-690Z.png" alt="Stage rigging">
+                        <div class="application-card-content">
+                            <h4>🎭 Stage Rigging</h4>
+                            <p>Flying performers on multiple wires. Choreography = braid word composition. The show must go on!</p>
+                        </div>
+                    </div>
+                </div>
 
-                <h3>Theoretical Questions</h3>
-                <ul>
-                    <li>Is there a polynomial-time algorithm for optimal untangling?</li>
-                    <li>What is the average-case complexity for random tangles?</li>
-                    <li>Can machine learning discover better heuristics than known algorithms?</li>
-                </ul>
+                <h2>Open Problems & Explorations</h2>
+
+                <h3>The ML Challenge: Can Machines Learn to Untangle?</h3>
+                <p>Machine learning has revolutionized game-playing (AlphaGo), protein folding (AlphaFold), and code generation (Copilot). Can it crack braid untangling?</p>
+
+                <div class="ml-approaches-gallery">
+                    <!-- Approach 1: RL -->
+                    <div class="ml-approach-card">
+                        <div class="ml-approach-header">
+                            <span class="ml-approach-icon">🎮</span>
+                            <h4>Approach 1: Reinforcement Learning</h4>
+                        </div>
+                        <div class="ml-approach-concept">
+                            <p><strong>Concept:</strong> Treat untangling as a game. The agent sees the current braid state, chooses a move (σᵢ or σᵢ⁻¹), and gets rewarded for reducing complexity.</p>
+                        </div>
+                        <div class="ml-architecture">
+<pre>
+┌─────────────────────────────────────────────┐
+│         REINFORCEMENT LEARNING AGENT        │
+├─────────────────────────────────────────────┤
+│                                             │
+│  STATE: Current braid word                  │
+│    [σ₁, σ₂, σ₁⁻¹, σ₂, σ₁, ...]            │
+│              │                              │
+│              ▼                              │
+│  ┌─────────────────────┐                    │
+│  │   POLICY NETWORK    │  (What move next?) │
+│  │   ┌───┬───┬───┬───┐ │                    │
+│  │   │ σ₁│σ₁⁻¹│σ₂│σ₂⁻¹│ │  ← Output probs  │
+│  │   └───┴───┴───┴───┘ │                    │
+│  └─────────────────────┘                    │
+│              │                              │
+│              ▼                              │
+│  ACTION: Apply chosen generator             │
+│              │                              │
+│              ▼                              │
+│  REWARD: +1 if word shortened               │
+│          +10 if reached identity (ε)        │
+│          -0.1 per step (encourages speed)   │
+│                                             │
+└─────────────────────────────────────────────┘
+</pre>
+                        </div>
+                        <div class="ml-analysis">
+                            <span class="ml-verdict-good">✓ Natural formulation, proven success in games</span>
+                            <span class="ml-verdict-bad">✗ Sparse rewards, huge action sequences, local minima</span>
+                        </div>
+                    </div>
+
+                    <!-- Approach 2: GNN -->
+                    <div class="ml-approach-card">
+                        <div class="ml-approach-header">
+                            <span class="ml-approach-icon">🕸️</span>
+                            <h4>Approach 2: Graph Neural Networks</h4>
+                        </div>
+                        <div class="ml-approach-concept">
+                            <p><strong>Concept:</strong> Represent the braid as a graph where nodes are strand segments and edges are crossings. GNN learns which crossings to undo.</p>
+                        </div>
+                        <div class="ml-architecture">
+<pre>
+     BRAID AS GRAPH REPRESENTATION
+
+     Strand A ●───────●───────●
+                     ╲╱
+     Strand B ●───────╳───────●
+                     ╱╲
+     Strand C ●───────●───────●
+
+              ↓ Convert to graph
+
+         ┌───┐      ┌───┐      ┌───┐
+         │ A │─────▶│ x │◀─────│ B │
+         └───┘      └───┘      └───┘
+                      │
+                    edge = crossing
+                    node features = position, history
+
+     GNN MESSAGE PASSING:
+     1. Each node gathers info from neighbors
+     2. Aggregates crossing context
+     3. Outputs: "Undo this crossing? [0.0 - 1.0]"
+</pre>
+                        </div>
+                        <div class="ml-analysis">
+                            <span class="ml-verdict-good">✓ Captures spatial structure, permutation invariant</span>
+                            <span class="ml-verdict-bad">✗ Variable graph size, complex crossing relationships</span>
+                        </div>
+                    </div>
+
+                    <!-- Approach 3: Transformer -->
+                    <div class="ml-approach-card">
+                        <div class="ml-approach-header">
+                            <span class="ml-approach-icon">🤖</span>
+                            <h4>Approach 3: Sequence-to-Sequence Transformer</h4>
+                        </div>
+                        <div class="ml-approach-concept">
+                            <p><strong>Concept:</strong> Treat braid words as language. Input: tangled braid word. Output: sequence of moves to untangle. Like translating tangled→untangled.</p>
+                        </div>
+                        <div class="ml-architecture">
+<pre>
+    BRAID WORD AS LANGUAGE
+
+    Input:  "σ₁ σ₂ σ₁⁻¹ σ₂ σ₁ σ₂⁻¹ σ₁⁻¹"
+
+            ↓ Tokenize ↓
+
+    Tokens: [σ₁] [σ₂] [σ₁⁻¹] [σ₂] [σ₁] [σ₂⁻¹] [σ₁⁻¹]
+
+            ↓ Transformer Encoder ↓
+
+    ┌─────────────────────────────────────────┐
+    │    Self-Attention: Each token          │
+    │    attends to all others               │
+    │    (captures long-range dependencies)  │
+    └─────────────────────────────────────────┘
+
+            ↓ Transformer Decoder ↓
+
+    Output: "σ₂ σ₁ σ₂⁻¹ σ₁⁻¹ ε"
+            (Simplified sequence → identity)
+
+    Like GPT, but for braids!
+</pre>
+                        </div>
+                        <div class="ml-analysis">
+                            <span class="ml-verdict-good">✓ State-of-art in sequences, handles long dependencies</span>
+                            <span class="ml-verdict-bad">✗ Needs massive training data, may hallucinate invalid moves</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Generation Strategy -->
+                <div class="explainer-card chalkboard">
+                    <h3 class="card-term">🎲 The Data Challenge</h3>
+                    <p class="card-intuition">Where do we get millions of training examples?</p>
+                    <div class="ml-data-strategy">
+<pre style="font-size: 12px; line-height: 1.4;">
+TRAINING DATA GENERATION PIPELINE
+
+1. START: Random braid word
+   σ₁ σ₂ σ₁⁻¹ σ₂ σ₁ σ₂⁻¹ σ₁⁻¹ σ₂ ...
+                    │
+2. COMPUTE: Ground truth (Garside Normal Form)
+   → Complexity = 5, canonical form = Δσ₂...
+                    │
+3. SIMULATE: Random simplification path
+   → One valid sequence of moves to identity
+                    │
+4. AUGMENT: Generate equivalent braids
+   → Apply Yang-Baxter: σ₁σ₂σ₁ ↔ σ₂σ₁σ₂
+                    │
+5. LABEL: (input, optimal_output) pairs
+
+RESULT: Millions of (tangled, solution) pairs
+        Ready for supervised learning!
+</pre>
+                    </div>
+                    <p class="card-complexity">Key insight: We can generate infinite training data because we can verify solutions!</p>
+                </div>
+
+                <!-- The Reward Function Challenge -->
+                <div class="explainer-card graph-paper">
+                    <h3 class="card-term">🎯 Designing the Reward Function</h3>
+                    <p class="card-intuition">What should the ML agent optimize for?</p>
+                    <div class="reward-comparison">
+                        <div class="reward-option">
+                            <strong>Option A: Word Length</strong><br>
+                            <code>reward = -len(braid_word)</code><br>
+                            <em>Simple but ignores structure</em>
+                        </div>
+                        <div class="reward-option">
+                            <strong>Option B: Garside Complexity</strong><br>
+                            <code>reward = -garside_length(braid)</code><br>
+                            <em>Mathematically rigorous but expensive</em>
+                        </div>
+                        <div class="reward-option">
+                            <strong>Option C: Crossing Count</strong><br>
+                            <code>reward = -count_crossings()</code><br>
+                            <em>Physical intuition, fast to compute</em>
+                        </div>
+                        <div class="reward-option highlight">
+                            <strong>Option D: Hybrid (Our Choice)</strong><br>
+                            <code>reward = -crossings - 0.1*word_len + 100*(is_identity)</code><br>
+                            <em>Balances exploration and exploitation</em>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conceptual Results -->
+                <div class="interactive-section">
+                    <h4 style="font-family: 'Caveat', cursive; font-size: 22px; color: var(--ink-blue); margin-top: 0;">Hypothetical Results: ML vs Classical</h4>
+                    <div class="ml-results-comparison">
+                        <table class="results-table">
+                            <thead>
+                                <tr>
+                                    <th>Method</th>
+                                    <th>Avg Steps</th>
+                                    <th>Optimal%</th>
+                                    <th>Speed</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Greedy (nearest)</td>
+                                    <td>12.3</td>
+                                    <td>15%</td>
+                                    <td>Fast</td>
+                                </tr>
+                                <tr>
+                                    <td>Garside Algorithm</td>
+                                    <td>8.1</td>
+                                    <td>100%</td>
+                                    <td>Slow</td>
+                                </tr>
+                                <tr class="highlight-row">
+                                    <td>RL Agent (trained)</td>
+                                    <td>8.4</td>
+                                    <td>92%</td>
+                                    <td>Fast</td>
+                                </tr>
+                                <tr class="highlight-row">
+                                    <td>Transformer</td>
+                                    <td>8.2</td>
+                                    <td>89%</td>
+                                    <td>Fast</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p class="table-note">*Hypothetical results for braids of length 10-20. Real research needed!</p>
+                    </div>
+                </div>
+
+                <!-- Call to Research -->
+                <div class="explainer-card chalkboard" style="text-align: center;">
+                    <h3 class="card-term">🔬 This Is An Open Research Problem!</h3>
+                    <p class="card-intuition">As of 2024, no one has published a comprehensive ML solution for braid simplification.</p>
+                    <p style="color: rgba(255,255,255,0.9); margin: 15px 0;">Could YOU be the one to create "AlphaBraid"?</p>
+                    <div class="ml-tools-list">
+                        <p style="color: rgba(255,255,255,0.7); margin-bottom: 10px;">Tools to explore:</p>
+                        <a href="https://pytorch-geometric.readthedocs.io/" target="_blank" class="ml-tool-link">
+                            <span class="tool-icon">🔗</span> PyTorch Geometric <span class="tool-use">(Graph Neural Networks)</span>
+                        </a>
+                        <a href="https://stable-baselines3.readthedocs.io/" target="_blank" class="ml-tool-link">
+                            <span class="tool-icon">🎮</span> Stable Baselines3 <span class="tool-use">(Reinforcement Learning)</span>
+                        </a>
+                        <a href="https://huggingface.co/docs/transformers" target="_blank" class="ml-tool-link">
+                            <span class="tool-icon">🤗</span> HuggingFace Transformers <span class="tool-use">(Sequence Models)</span>
+                        </a>
+                    </div>
+                </div>
 
                 <h3>Practical Extensions</h3>
                 <ul>
-                    <li><strong>Dynamic leashes</strong>: Variable-length leashes (harder!)</li>
+                    <li><strong>Dynamic leashes</strong>: Variable-length leashes (retractable—even harder!)</li>
                     <li><strong>Obstacles</strong>: Trees, poles (adds fundamental group of plane minus points)</li>
                     <li><strong>Multiple walkers</strong>: Each person has multiple dogs</li>
-                    <li><strong>Non-planar</strong>: Hills, stairs (3D braids, even more complex)</li>
+                    <li><strong>Non-planar</strong>: Hills, stairs (3D braids, exponentially more complex)</li>
                 </ul>
 
                 <h2>References and Further Reading</h2>
@@ -238,6 +866,8 @@
                 <p>The three-dog leash problem exemplifies how everyday phenomena encode deep mathematical structure. The transition from two to three dogs marks a phase change in complexity—from abelian to non-abelian groups, from trivial to algorithmically hard, from mundane to quantum-mechanical.</p>
 
                 <p>Every time you untangle your dogs' leashes, you're solving a problem that connects to the frontiers of topology, quantum computing, and complexity theory. Mathematics is everywhere, even on your morning walk.</p>
+
+                <p class="doodle-annotation">Now go pet those dogs. They've been doing math all along.</p>
             </div>
         </div>
     </div>
@@ -249,7 +879,11 @@
     <script src="js/braid.js"></script>
     <script src="js/entities.js"></script>
     <script src="js/renderer.js"></script>
+    <script src="js/renderer3d.js"></script>
     <script src="js/simulation.js"></script>
+    <script src="js/braid-viz.js"></script>
+    <script src="js/leash-demo.js"></script>
+    <script src="js/knot-3d.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>
