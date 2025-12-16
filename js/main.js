@@ -10,6 +10,7 @@
     let renderer = null;
     let lastTime = 0;
     let animationId = null;
+    const USE_3D_RENDERER = true; // Toggle between 2D and 3D rendering
 
     // DOM elements
     const elements = {
@@ -24,11 +25,19 @@
         pauseBtn: null,
         crossingCount: null,
         tangleMetric: null,
+        activeTangles: null,
+        capstanFriction: null,
         timeElapsed: null,
         braidWord: null,
         eventLog: null,
         crossingAlert: null,
-        tabs: null
+        tabs: null,
+        // State cards
+        walkerStateCard: null,
+        walkerStateValue: null,
+        walkerHandValue: null,
+        dogBehaviors: [],
+        dogEnergyBars: []
     };
 
     /**
@@ -47,14 +56,35 @@
         elements.pauseBtn = document.getElementById('pauseBtn');
         elements.crossingCount = document.getElementById('crossingCount');
         elements.tangleMetric = document.getElementById('tangleMetric');
+        elements.activeTangles = document.getElementById('activeTangles');
+        elements.capstanFriction = document.getElementById('capstanFriction');
         elements.timeElapsed = document.getElementById('timeElapsed');
         elements.braidWord = document.getElementById('braidWord');
         elements.eventLog = document.getElementById('eventLog');
         elements.crossingAlert = document.getElementById('crossingAlert');
         elements.tabs = document.querySelectorAll('.tab');
 
-        // Initialize renderer
-        renderer = new Renderer(elements.canvas);
+        // State card elements
+        elements.walkerStateCard = document.getElementById('walkerStateCard');
+        elements.walkerStateValue = document.getElementById('walkerStateValue');
+        elements.walkerHandValue = document.getElementById('walkerHandValue');
+        elements.dogBehaviors = [
+            document.getElementById('dogABehavior'),
+            document.getElementById('dogBBehavior'),
+            document.getElementById('dogCBehavior')
+        ];
+        elements.dogEnergyBars = [
+            document.querySelector('#dogAEnergy .energy-fill'),
+            document.querySelector('#dogBEnergy .energy-fill'),
+            document.querySelector('#dogCEnergy .energy-fill')
+        ];
+
+        // Initialize renderer (3D or 2D based on flag)
+        if (USE_3D_RENDERER && typeof Renderer3D !== 'undefined') {
+            renderer = new Renderer3D(elements.canvas);
+        } else {
+            renderer = new Renderer(elements.canvas);
+        }
 
         // Initialize simulation
         simulation = new Simulation({
@@ -63,7 +93,10 @@
             dogEnergy: parseFloat(elements.dogEnergySlider.value)
         });
 
-        simulation.init(renderer.width, renderer.height);
+        // Get canvas dimensions for simulation init (3D renderer uses container size)
+        const canvasWidth = renderer.width || elements.canvas.width || 800;
+        const canvasHeight = renderer.height || elements.canvas.height || 600;
+        simulation.init(canvasWidth, canvasHeight);
 
         // Set up callbacks
         simulation.onCrossing(handleCrossing);
@@ -90,11 +123,94 @@
         // Update simulation
         simulation.update(dt);
 
+        // Update state cards
+        updateStateCards();
+
         // Render
         renderer.render(simulation);
 
         // Continue loop
         animationId = requestAnimationFrame(gameLoop);
+    }
+
+    /**
+     * Update state cards with current walker and dog states
+     */
+    function updateStateCards() {
+        if (!simulation || !simulation.walker) return;
+
+        // Walker state
+        const walker = simulation.walker;
+        const walkerState = walker.untangleState || 'normal';
+
+        // Format state name for display
+        const stateNames = {
+            'normal': 'Walking',
+            'assessing': 'Assessing...',
+            'stepping': 'Stepping Over',
+            'turning': 'Turning',
+            'waiting': 'Waiting'
+        };
+
+        if (elements.walkerStateValue) {
+            elements.walkerStateValue.textContent = stateNames[walkerState] || walkerState;
+        }
+
+        if (elements.walkerStateCard) {
+            elements.walkerStateCard.setAttribute('data-state', walkerState);
+        }
+
+        // Walker hand height
+        if (elements.walkerHandValue) {
+            const handHeight = walker.handHeight || 0;
+            if (handHeight > 15) {
+                elements.walkerHandValue.textContent = 'Raised High';
+            } else if (handHeight > 5) {
+                elements.walkerHandValue.textContent = 'Raised';
+            } else {
+                elements.walkerHandValue.textContent = 'Normal';
+            }
+        }
+
+        // Dog states
+        const dogs = simulation.dogs;
+        const behaviorNames = {
+            'wander': 'Wandering',
+            'followWalker': 'Following',
+            'sniff': 'Sniffing',
+            'pull': 'Pulling!',
+            'avoidOtherDogs': 'Avoiding',
+            'avoid': 'Avoiding',
+            'pee': 'Marking Territory',
+            'socialize': 'Socializing',
+            'react_tangle': 'Frustrated!',
+            'idle': 'Resting'
+        };
+
+        for (let i = 0; i < dogs.length && i < 3; i++) {
+            const dog = dogs[i];
+            const behaviorEl = elements.dogBehaviors[i];
+            const energyBar = elements.dogEnergyBars[i];
+
+            if (behaviorEl) {
+                // Get current behavior from dog
+                const behavior = dog.currentBehavior || dog.activeBehavior || 'wander';
+                const displayName = behaviorNames[behavior] || behavior;
+                behaviorEl.textContent = displayName;
+                behaviorEl.setAttribute('data-behavior', behavior);
+            }
+
+            if (energyBar) {
+                // Energy level (0-1 scale, typically around 0.5-1.5)
+                const energyPercent = Math.min(100, Math.max(0, (dog.energy || 0.75) / 1.5 * 100));
+                energyBar.style.width = energyPercent + '%';
+
+                // Position background gradient based on energy level
+                // Low energy = green (left), high energy = red (right)
+                const gradientPos = Math.max(0, 100 - energyPercent);
+                energyBar.style.backgroundPosition = gradientPos + '% 0';
+            }
+        }
     }
 
     /**
@@ -153,6 +269,31 @@
         elements.timeElapsed.textContent = stats.elapsedTimeFormatted;
         elements.braidWord.textContent = stats.braidWord;
 
+        // Update tangle-specific stats
+        const activeTangleCount = stats.activeTangles || 0;
+        const lockedCount = stats.lockedTangles || 0;
+        elements.activeTangles.textContent = activeTangleCount + (lockedCount > 0 ? ` (${lockedCount}🔒)` : '');
+        elements.capstanFriction.textContent = stats.totalCapstanFriction || '1.0x';
+
+        // Color coding for active tangles
+        if (activeTangleCount === 0) {
+            elements.activeTangles.style.color = '#28a745'; // Green - no tangles
+        } else if (lockedCount === 0) {
+            elements.activeTangles.style.color = '#ffc107'; // Yellow - loose tangles
+        } else {
+            elements.activeTangles.style.color = '#dc3545'; // Red - locked tangles
+        }
+
+        // Color coding for Capstan friction (higher = worse)
+        const frictionValue = parseFloat(stats.totalCapstanFriction) || 1.0;
+        if (frictionValue < 1.5) {
+            elements.capstanFriction.style.color = '#28a745'; // Green
+        } else if (frictionValue < 3.0) {
+            elements.capstanFriction.style.color = '#ffc107'; // Yellow
+        } else {
+            elements.capstanFriction.style.color = '#dc3545'; // Red - hard to untangle!
+        }
+
         // Color coding for complexity
         if (stats.complexity === 0) {
             elements.tangleMetric.style.color = '#28a745'; // Green - untangled
@@ -195,8 +336,11 @@
 
         // Reset button
         elements.resetBtn.addEventListener('click', () => {
-            simulation.reset(renderer.width, renderer.height);
+            const canvasWidth = renderer.width || elements.canvas.width || 800;
+            const canvasHeight = renderer.height || elements.canvas.height || 600;
+            simulation.reset(canvasWidth, canvasHeight);
             elements.eventLog.innerHTML = '<div class="event">[0.0s] Simulation reset — walk begins!</div>';
+            elements.pauseBtn.textContent = 'Pause'; // Reset pause button state
             updateStats(simulation.getStats());
         });
 

@@ -33,15 +33,92 @@ class Simulation {
         this.elapsedTime = 0;
         this.activeCrossings = []; // For rendering
         this.crossingDisplayTime = 1.0; // How long to show crossing indicators
+        this.activeTangles = []; // For rendering tangle points
 
         // Event callbacks
         this.onCrossingCallback = null;
         this.onStatsUpdateCallback = null;
+        this.onTangleCallback = null;
 
         // Setup physics crossing detection
         this.physics.onCrossing((ropeA, ropeB, segA, segB, sign, point) => {
             this.handleCrossing(ropeA, ropeB, segA, segB, sign, point);
         });
+
+        // Setup tangle event callbacks - THIS IS THE KEY INTEGRATION
+        this.physics.onTangleFormed = (tangle, ropeA, ropeB, point) => {
+            this.handleTangleFormed(tangle, ropeA, ropeB, point);
+        };
+
+        this.physics.onTangleBroken = (tangle) => {
+            this.handleTangleBroken(tangle);
+        };
+    }
+
+    /**
+     * Handle new tangle formation
+     */
+    handleTangleFormed(tangle, ropeA, ropeB, point) {
+        // Find rope names
+        const ropeIdxA = this.leashes.indexOf(ropeA);
+        const ropeIdxB = this.leashes.indexOf(ropeB);
+        const nameA = ropeIdxA >= 0 ? this.dogs[ropeIdxA]?.name || `Rope ${ropeIdxA}` : 'Unknown';
+        const nameB = ropeIdxB >= 0 ? this.dogs[ropeIdxB]?.name || `Rope ${ropeIdxB}` : 'Unknown';
+
+        const event = {
+            type: 'tangle_formed',
+            time: this.elapsedTime,
+            description: `Tangle formed: ${nameA} ↔ ${nameB} (${(tangle.wrapAngle * 180 / Math.PI).toFixed(0)}°)`,
+            tangleId: tangle.id,
+            ropeA: nameA,
+            ropeB: nameB,
+            point: point.clone(),
+            wrapAngle: tangle.wrapAngle
+        };
+
+        // Add to active tangles for rendering
+        this.activeTangles.push({
+            tangle: tangle,
+            ropeA: ropeA,
+            ropeB: ropeB,
+            formationTime: this.elapsedTime
+        });
+
+        // Trigger callback
+        if (this.onTangleCallback) {
+            this.onTangleCallback(event);
+        }
+
+        // Also fire as a crossing callback for the event log
+        if (this.onCrossingCallback) {
+            this.onCrossingCallback(event);
+        }
+    }
+
+    /**
+     * Handle tangle breaking
+     */
+    handleTangleBroken(tangle) {
+        // Remove from active tangles
+        this.activeTangles = this.activeTangles.filter(t => t.tangle.id !== tangle.id);
+
+        const event = {
+            type: 'tangle_broken',
+            time: this.elapsedTime,
+            description: `Tangle ${tangle.id} broke free! (was ${tangle.isLocked ? 'locked' : 'loose'})`,
+            tangleId: tangle.id,
+            wasLocked: tangle.isLocked,
+            finalWrapAngle: tangle.wrapAngle
+        };
+
+        // Trigger callbacks
+        if (this.onTangleCallback) {
+            this.onTangleCallback(event);
+        }
+
+        if (this.onCrossingCallback) {
+            this.onCrossingCallback(event);
+        }
     }
 
     /**
@@ -60,6 +137,14 @@ class Simulation {
         const dogColors = ['#8B0000', '#00008B', '#006400']; // Matching leash colors
         const angleSpread = Math.PI / 3; // 60 degrees spread
 
+        // Hand position offsets - leashes attach at different points
+        // This prevents instant tangling at origin
+        this.leashHandOffsets = [
+            new Vec2(-4, 0),   // Left leash
+            new Vec2(0, -2),   // Center leash (slightly forward)
+            new Vec2(4, 0)     // Right leash
+        ];
+
         for (let i = 0; i < 3; i++) {
             const angle = -Math.PI / 2 + (i - 1) * angleSpread; // Fan out ahead
             const distance = this.config.leashLength * 0.7;
@@ -72,13 +157,14 @@ class Simulation {
             this.dogs.push(dog);
 
             // Create leash connecting walker to dog
+            // Use displaced hand position to prevent instant tangling
             const leash = new Rope(
-                this.walker.getHandPosition(),
+                this.getDisplacedHandPosition(i),
                 dog.getCollarPosition(),
                 this.config.leashSegments,
                 {
                     mass: 0.05,
-                    stiffness: 0.95,
+                    stiffness: 1.0,      // Full stiffness for leashes (no stretch)
                     bendStiffness: 0.2,
                     damping: 0.03,
                     color: dogColors[i],
@@ -146,13 +232,18 @@ class Simulation {
 
         this.elapsedTime += dt;
 
-        // Update walker
+        // Provide tangle info to walker for untangle behavior
+        const tangleStats = this.getTangleStats();
+        this.walker.setTangleInfo(tangleStats, this.dogs);
+
+        // Update walker (now with untangle behavior)
         this.walker.setSpeedMultiplier(this.config.walkerSpeed);
         this.walker.update(dt);
 
-        // Update dogs with behaviors
+        // Update dogs with behaviors (pass tangles for frustration reactions)
+        const tangles = this.physics.tangleConstraints || [];
         for (const dog of this.dogs) {
-            dog.update(dt, this.walker, this.dogs, this.config.leashLength);
+            dog.update(dt, this.walker, this.dogs, this.config.leashLength, tangles);
         }
 
         // Update leash endpoints to follow entities
@@ -160,11 +251,17 @@ class Simulation {
             const leash = this.leashes[i];
             const dog = this.dogs[i];
 
-            // Move leash start to walker's hand
-            leash.moveStart(this.walker.getHandPosition());
+            // Move leash start to walker's displaced hand position
+            // Each leash attaches at a different point to prevent instant tangling
+            leash.moveStart(this.getDisplacedHandPosition(i));
 
             // Move leash end to dog's collar
             leash.moveEnd(dog.getCollarPosition());
+
+            // Propagate dog's bounce height to leash particles
+            // The end particle gets the dog's full height, and it
+            // smoothly interpolates toward the walker (height 0)
+            this.propagateHeightToLeash(leash, dog);
         }
 
         // Step physics
@@ -182,6 +279,45 @@ class Simulation {
         // Periodic stats update
         if (this.onStatsUpdateCallback && Math.floor(this.elapsedTime * 4) !== Math.floor((this.elapsedTime - dt) * 4)) {
             this.onStatsUpdateCallback(this.getStats());
+        }
+    }
+
+    /**
+     * Get displaced hand position for a specific leash
+     * Each leash attaches at a different point on the walker's hand
+     * This prevents instant tangling by spreading attachment points
+     */
+    getDisplacedHandPosition(leashIndex) {
+        const baseHandPos = this.walker.getHandPosition();
+        if (!this.leashHandOffsets || leashIndex >= this.leashHandOffsets.length) {
+            return baseHandPos;
+        }
+
+        // Rotate the offset by walker's facing direction
+        const offset = this.leashHandOffsets[leashIndex];
+        const rotatedOffset = offset.rotate(this.walker.facing);
+        return baseHandPos.add(rotatedOffset);
+    }
+
+    /**
+     * Propagate the dog's bounce height along the leash particles
+     * This creates natural over/under crossings based on dog movement
+     */
+    propagateHeightToLeash(leash, dog) {
+        const particles = leash.particles;
+        const numParticles = particles.length;
+
+        // Dog's height at the end, walker at height 0
+        const dogHeight = dog.height;
+
+        for (let i = 0; i < numParticles; i++) {
+            // t goes from 0 (walker/start) to 1 (dog/end)
+            const t = i / (numParticles - 1);
+
+            // Height interpolates smoothly from 0 to dogHeight
+            // Using smooth step for more natural curve
+            const smoothT = t * t * (3 - 2 * t); // Smoothstep function
+            particles[i].height = smoothT * dogHeight;
         }
     }
 
@@ -216,11 +352,60 @@ class Simulation {
     getStats() {
         const braidStats = this.braidTracker.getStats();
 
+        // Tangle statistics
+        const tangleStats = this.getTangleStats();
+
         return {
             ...braidStats,
             elapsedTime: this.elapsedTime,
             elapsedTimeFormatted: this.formatTime(this.elapsedTime),
-            isPaused: this.isPaused
+            isPaused: this.isPaused,
+            // Tangle stats
+            activeTangles: tangleStats.count,
+            lockedTangles: tangleStats.locked,
+            maxWrapAngle: tangleStats.maxWrap,
+            totalCapstanFriction: tangleStats.totalFriction,
+            tangleDetails: tangleStats.details
+        };
+    }
+
+    /**
+     * Get detailed tangle statistics
+     */
+    getTangleStats() {
+        const tangles = this.physics.tangleConstraints;
+
+        if (tangles.length === 0) {
+            return {
+                count: 0,
+                locked: 0,
+                maxWrap: '0°',
+                totalFriction: '1.0x',
+                details: []
+            };
+        }
+
+        let lockedCount = 0;
+        let maxWrapAngle = 0;
+        let totalFrictionMultiplier = 1.0;
+        const details = [];
+
+        for (const tangle of tangles) {
+            if (tangle.isLocked) lockedCount++;
+            if (tangle.wrapAngle > maxWrapAngle) maxWrapAngle = tangle.wrapAngle;
+
+            // Capstan friction accumulates multiplicatively
+            totalFrictionMultiplier *= tangle.getCapstanFriction();
+
+            details.push(tangle.getDebugInfo());
+        }
+
+        return {
+            count: tangles.length,
+            locked: lockedCount,
+            maxWrap: (maxWrapAngle * 180 / Math.PI).toFixed(0) + '°',
+            totalFriction: totalFrictionMultiplier.toFixed(1) + 'x',
+            details: details
         };
     }
 
@@ -252,25 +437,25 @@ class Simulation {
     }
 
     /**
-     * Reset simulation to initial state
+     * Reset simulation to initial state (complete cold start)
      */
     reset(canvasWidth, canvasHeight) {
-        // Clear physics
-        for (const rope of this.leashes) {
-            this.physics.removeRope(rope);
-        }
+        // Reset physics world completely (clears all ropes, tangles, intersections)
+        this.physics.reset();
 
-        // Clear state
+        // Clear all simulation state
         this.dogs = [];
         this.leashes = [];
         this.activeCrossings = [];
+        this.activeTangles = [];
         this.elapsedTime = 0;
+        this.isPaused = false;
 
-        // Reset trackers
+        // Reset trackers (clears braid words and crossing history)
         this.braidTracker.reset();
         this.crossingDetector.reset();
 
-        // Reinitialize
+        // Reinitialize fresh
         this.init(canvasWidth, canvasHeight);
     }
 
