@@ -125,8 +125,11 @@ class Simulation {
      * Initialize the simulation with walker and dogs
      */
     init(canvasWidth, canvasHeight) {
-        const centerX = canvasWidth / 2;
-        const startY = canvasHeight * 0.7;
+        // Position on 3D sidewalk (x=-60) and start at z=0 in 3D (y=0 in 2D)
+        // The 3D renderer uses: 3D.x = 2D.x, 3D.z = -2D.y
+        // Sidewalk is at 3D x=-60, so 2D x=-60
+        const centerX = -60;  // On the sidewalk in 3D view
+        const startY = 0;     // Start at z=0 in 3D
 
         // Create walker
         this.walker = new Walker(centerX, startY);
@@ -141,12 +144,13 @@ class Simulation {
         // This prevents instant tangling at origin
         this.leashHandOffsets = [
             new Vec2(-4, 0),   // Left leash
-            new Vec2(0, -2),   // Center leash (slightly forward)
+            new Vec2(0, 2),    // Center leash (slightly forward - positive Y because forward is -Y)
             new Vec2(4, 0)     // Right leash
         ];
 
         for (let i = 0; i < 3; i++) {
-            const angle = -Math.PI / 2 + (i - 1) * angleSpread; // Fan out ahead
+            // Dogs fan out AHEAD of walker (negative Y direction = forward in 3D)
+            const angle = -Math.PI / 2 + (i - 1) * angleSpread; // Fan out ahead (negative Y)
             const distance = this.config.leashLength * 0.7;
 
             const dogX = centerX + Math.cos(angle) * distance;

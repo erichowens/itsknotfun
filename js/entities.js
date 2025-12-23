@@ -78,7 +78,8 @@ class Walker extends Entity {
         this.walkSpeed = 40; // Normal walking pace
 
         // Walker moves forward by default
-        this.facing = -Math.PI / 2; // Facing up (forward on sidewalk)
+        // In 3D: negative 2D.y = positive 3D.z = FORWARD (away from camera)
+        this.facing = -Math.PI / 2; // Facing forward in 3D view (negative Y)
         this.targetFacing = this.facing;
 
         // Gait animation
@@ -86,11 +87,11 @@ class Walker extends Entity {
         this.armSwing = 0;
 
         // Hand position offset (where leashes attach)
-        this.handOffset = new Vec2(0, 5); // Slightly in front
+        this.handOffset = new Vec2(0, 5); // Slightly in front (positive because forward is -Y)
 
         // Auto-walk state
         this.isWalking = true;
-        this.walkDirection = new Vec2(0, -1); // Up the screen
+        this.walkDirection = new Vec2(0, -1); // Negative Y = forward in 3D (away from camera)
         this.baseWalkDirection = new Vec2(0, -1); // Original direction to return to
 
         // Untangling behavior state
@@ -132,19 +133,25 @@ class Walker extends Entity {
      * Update walker position and animation, including untangle behavior
      */
     update(dt) {
+        // CRITICAL: Always enforce forward direction - NEVER walk backwards
+        // This fixes bugs where untangle behavior could flip direction
+        this.walkDirection.x = this.baseWalkDirection.x;
+        this.walkDirection.y = this.baseWalkDirection.y;
+
         // Update cooldown
         if (this.untangleCooldown > 0) {
             this.untangleCooldown -= dt;
         }
 
-        // Check for tangles and respond
+        // Check for tangles and respond (only affects speed, not direction)
         this.updateUntangleBehavior(dt);
 
         if (this.isWalking) {
             const speedMult = this.getSpeedMultiplierForState();
-            const targetVel = this.walkDirection.mul(this.walkSpeed * speedMult);
+            // ALWAYS use baseWalkDirection for velocity (never trust walkDirection)
+            const targetVel = this.baseWalkDirection.mul(this.walkSpeed * speedMult);
             this.velocity.lerpMut(targetVel, 0.1);
-            this.targetFacing = this.walkDirection.angle;
+            this.targetFacing = this.baseWalkDirection.angle;
         }
 
         super.update(dt);
